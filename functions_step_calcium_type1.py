@@ -25,22 +25,36 @@ filedir_D3 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
         'thygcamp6s_LT4(9-10-17)/'
 filedir_D4 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+\
         'thygcamp6s_D4 5Hz (9-30-17)/'
+        
 datafile = 'D4_001_Z1_hz5'
 
 if datafile == 'D2_001_Z1t0_hz05':
 
     filedir = filedir_D2
+    
     picklefile = 'mThy6s2_alldrift_D2_001_VARS.pickle'
+    
     responses_means_001D2Z1t0hz05, responses_indices_001D0Z1t0hz05 = (
         OSC.load_responses(filedir, picklefile)
     )
+    
+    spontaneousraw_001D2Z1t0hz05, spontaneousdff_001D2Z1t0hz05 = (
+        OSC.load_spontaneous(filedir, picklefile)
+    )
+    
 
 if datafile == 'D3_001_Z1t1_hz05':
     
     filedir = filedir_D3
+    
     picklefile = 'mThy6s2_alldrift_D3_001Z1_VARS.pickle'
+    
     responses_means_001D3Z1t1hz05, responses_indices_001D3Z1t1hz05 = \
         OSC.load_responses(filedir, picklefile)
+        
+    spontaneousraw_001D3Z1t1hz05, spontaneousdff_001D3Z1t1hz05 = (
+        OSC.load_spontaneous(filedir, picklefile)
+    )
     
 
 if datafile == 'D3_001_Z1t2_hz05':

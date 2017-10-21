@@ -495,16 +495,24 @@ all_response_indices = (
 
 """
 Chunk out the first ~60sec (1700 frames) of signal during gray screen at the
-beginning of session
+beginning of session - raw signal and deltaF/F via EWMA-filter signal
 
 delayframes -> the number of frames prior to first stim onset
     (ie during gray screen)
 """
-gray_frames = list()
+# might be able to embed in graydff loop if len(dff_ewma) == len(cellsmean)
+grayraw_frames = list()
+
+for cell in range(len(cellsmean)):
+    temp_gray = (cellsmean[cell][0:delayframes])
+    grayraw_frames.append(temp_gray)
+    
+    
+graydff_frames = list()
 
 for cell in range(len(dff_ewma)):
     temp_gray = (dff_ewma[cell][0:delayframes])
-    gray_frames.append(temp_gray)
+    graydff_frames.append(temp_gray)
 
 #==============================================================================  
 # Run some functions
@@ -522,7 +530,8 @@ filenamepkl = roizipname.replace('ROI.zip','VARS.pickle')
 # Saving the objects:
 with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
     pickle.dump({
-    
+                'spontaneous_raw': grayraw_frames,
+                'spontaneous_dff': graydff_frames,
                 'response_avgs':response_avgs,
                 'pregray1s_response_avgs':pregray1s_response_avgs,
                 'pre_response_post_avgs':pre_response_post_avgs, 
