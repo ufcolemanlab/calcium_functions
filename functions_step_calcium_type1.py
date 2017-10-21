@@ -26,7 +26,7 @@ filedir_D3 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
 filedir_D4 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+\
         'thygcamp6s_D4 5Hz (9-30-17)/'
         
-datafile = 'D4_001_Z1_hz5'
+datafile = 'D2_001_Z1t0_hz05'
 
 if datafile == 'D2_001_Z1t0_hz05':
 

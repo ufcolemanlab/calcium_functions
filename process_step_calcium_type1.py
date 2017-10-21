@@ -6,6 +6,7 @@ Created on Mon Sep 11 19:44:20 2017
 """
 import numpy as np
 from collections import OrderedDict
+from matplotlib import pyplot as plt
 
 import cPickle as pickle
 import readroi as roizip
@@ -21,14 +22,14 @@ from calcium import StepCodeFile as SCF
 #==============================================================================
 #fileDirectoryTS = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
 #fileDirectory = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
-#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-#    'thygcamp6s_LT4(9-10-17)/'
-fileDirectory = '/Users/jcoleman/Documents/--DATA--/' + \
-    'in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
+fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+    'thygcamp6s_LT4(9-10-17)/'
+#fileDirectory = '/Users/jcoleman/Documents/--DATA--/' + \
+#    'in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
 
-datafile = 'D4_001_Z1_hz1'
+datafile = 'D2_001_Z1t0_hz05'
 
-if datafile == 'D4_001_Z1_hz1':
+if datafile == 'D2_001_Z1t0_hz05':
 
     fileBin = 'mThy6s2_alldrift_D2_001_12_data.bin'
     imgname = 'STD_mThy6s2_alldrift_D2_001.tif'
@@ -545,10 +546,18 @@ with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
                 f)
 #==============================================================================
 
-OSC.tracePlot(gray_frames,
+# need tracePlot_raw function to increase space between traces
+OSC.tracePlot(grayraw_frames,
               response_indices,
               grays_indices)
-plt.title('Signal during gray screen delay prior to stim')
+plt.title('Raw signal during gray screen delay prior to stim')
+
+
+OSC.tracePlot(graydff_frames,
+              response_indices,
+              grays_indices)
+plt.title('deltaF/F (EWMA) signal during gray screen delay prior to stim')
+
 
 OSC.plotStack(
               fileDirectory,
