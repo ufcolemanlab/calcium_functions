@@ -7,6 +7,7 @@ Created on Mon Sep 11 19:44:20 2017
 import numpy as np
 from collections import OrderedDict
 from matplotlib import pyplot as plt
+from scipy.io import matlab
 
 import cPickle as pickle
 import readroi as roizip
@@ -22,12 +23,17 @@ from calcium import StepCodeFile as SCF
 #==============================================================================
 #fileDirectoryTS = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
 #fileDirectory = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
-fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-    'thygcamp6s_LT4(9-10-17)/'
-#fileDirectory = '/Users/jcoleman/Documents/--DATA--/' + \
-#    'in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
 
-datafile = 'D2_001_Z1t0_hz05'
+#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+#    'thygcamp6s_LT4(9-10-17)/'
+
+#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+#    'thygcamp6s_D4 5Hz (9-30-17)/'
+    
+fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+    'thygcamp6s_D5 (10-23-17)/'
+
+datafile = 'D5_001_Z1_hz5'
 
 if datafile == 'D2_001_Z1t0_hz05':
 
@@ -77,9 +83,22 @@ if datafile == 'D4_002_Z1_hz5':
     imgname = 'STD_mThy6s2_alldrift_D4_002Z1hz5.tif'
     roizipname = 'mThy6s2_alldrift_D4_002Zhz5_ROI.zip'
     
+if datafile == 'D5_001_Z1_hz1':
+
+    fileBin = 'mThy6s_001_D5Z1hz1_12_data.bin'
+    imgname = 'STD_mThy6s2_alldrift_D5_001Z1hz1.tif'
+    roizipname = 'ROI_mThy6s2_alldrift_D5_001Z1hz1.zip'
+    
+
+if datafile == 'D5_001_Z1_hz5':
+
+    fileBin = 'mThy6s_001_D5Z1hz5_13_data.bin'
+    imgname = 'STD_mThy6s2_alldrift_D5_001Z1hz5.tif'
+    roizipname = 'ROI_mThy6s2_alldrift_D5_001Z1hz5.zip'
+    
 
 # parameters for mulitplot function
-a=roizip.read_roi_zip(fileDirectory + roizipname)
+a = roizip.read_roi_zip(fileDirectory + roizipname)
 
 rows = len(a) # number of ROIs
 cols = 8 # number of distinct stims
@@ -142,15 +161,12 @@ From Konnerth lab Nature Protocols paper, for 30Hz scanning:
     samplingfreq = 30
 See paper for more details
 """   
-dff, dff_ewma, dff_offset = (
-    cidfast.run_deltaf_ewma(
-        cellsmean,
-        t_0,
-        t_1,
-        t_2,
-        mpmSamplingFreq
-        )
-)
+dff, dff_ewma, dff_offset = (cidfast.run_deltaf_ewma(cellsmean,
+                                                     t_0,
+                                                     t_1,
+                                                     t_2,
+                                                     mpmSamplingFreq)
+                                                     )
 
 """
 Calculate deltaF/F for event-related activity
@@ -520,43 +536,63 @@ for cell in range(len(dff_ewma)):
 """
 1) Save all variables from the session; to load -->
     dill.load_session(fileDirectory+filenamepkl)
+2) Save selected variables to a pickle file
+3) Save selected variables to a Matlab (mat) file
 """
-filenamedill = roizipname.replace('ROI.zip','SESSION.pkl')
-filenamepkl = roizipname.replace('ROI.zip','VARS.pickle')
+# Create a sensible name
+filenamedill = roizipname.replace('ROI','SESSION').replace('.zip','.pkl')
+filenamepkl = roizipname.replace('ROI','VARS').replace('.zip','.pickle')
+filenamemat = roizipname.replace('ROI','VARS').replace('.zip','.mat')
+
+# 1) Save 'workspace' to a PKL file (re-loading is an issue, not working on Mac)
 #dill.dump_session(fileDirectory+'RAW_'+filenamepkl)
 
-
-# Pickle specific variables for response t1 vs. t2, etc plotting
-# obj0, obj1, obj2 are created here...
-# Saving the objects:
+# 2) Pickle specific variables for response t1 vs. t2, etc plotting
 with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
-    pickle.dump({
-                'spontaneous_raw': grayraw_frames,
-                'spontaneous_dff': graydff_frames,
-                'response_avgs':response_avgs,
-                'pregray1s_response_avgs':pregray1s_response_avgs,
-                'pre_response_post_avgs':pre_response_post_avgs, 
-                'responses_means':responses_means,
-                'stimwindow':stimwindow,
-                'pthresh':pthresh,
-                'all_response_indices':all_response_indices
-                
-                },
-                 
-                f)
+    pickle.dump({'grayraw_frames': grayraw_frames,
+                 'graydff_frames': graydff_frames,
+                 'response_avgs':response_avgs,
+                 'pregray1s_response_avgs':pregray1s_response_avgs,
+                 'pre_response_post_avgs':pre_response_post_avgs, 
+                 'responses_means':responses_means,
+                 'stimwindow':stimwindow,
+                 'pthresh':pthresh,
+                 'all_response_indices':all_response_indices
+                 }, f)
+
+# 3) Save initial "gray frames" to a MAT file
+savedVariables = {'grayraw_frames': grayraw_frames,
+                 'graydff_frames': graydff_frames,
+                 'README': 'm = cell, n = time (i.e. frame#)'
+                 }              
+matlab.savemat(fileDirectory+filenamemat, savedVariables)
+
+# Need to figure out saving nested dict into MAT file - below works for cell#0
+#matlab.savemat(fileDirectory+'keys.mat', {'response_avgs_keys':response_avgs.keys(),
+#                                          'response_avgs_vals':response_avgs[0].values()
+#                                          })
+
 #==============================================================================
 
 # need tracePlot_raw function to increase space between traces
 OSC.tracePlot(grayraw_frames,
               response_indices,
-              grays_indices)
+              grays_indices,
+              'False',
+              'raw')
+plt.xlabel('Frame (~'+ str(mpmSamplingFreq) +' fps)')
+plt.ylabel('Mean gray value')
 plt.title('Raw signal during gray screen delay prior to stim')
 
 
 OSC.tracePlot(graydff_frames,
               response_indices,
-              grays_indices)
-plt.title('deltaF/F (EWMA) signal during gray screen delay prior to stim')
+              grays_indices,
+              'True',
+              'dFoF')
+plt.xlabel('Frame (~'+ str(mpmSamplingFreq) +' fps)')
+plt.ylabel('deltaF/F')
+plt.title('Filtered/normalized signal during gray screen delay prior to stim')
 
 
 OSC.plotStack(
@@ -578,4 +614,4 @@ OSC.multiPlot(
                   
 #==============================================================================
 
-print ('Processed data for '+datafile)
+print ('Processed data for '+ datafile)
