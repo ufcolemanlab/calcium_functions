@@ -24,16 +24,16 @@ from calcium import StepCodeFile as SCF
 #fileDirectoryTS = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
 #fileDirectory = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
 
-#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-#    'thygcamp6s_LT4(9-10-17)/'
+fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+    'thygcamp6s_LT4(9-10-17)/'
 
 #fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
 #    'thygcamp6s_D4 5Hz (9-30-17)/'
     
-fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-    'thygcamp6s_D5 (10-23-17)/'
+#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
+#    'thygcamp6s_D5 (10-23-17)/'
 
-datafile = 'D5_001_Z1_hz5'
+datafile = 'D3_001_Z1t1_hz05'
 
 if datafile == 'D2_001_Z1t0_hz05':
 
@@ -530,6 +530,71 @@ graydff_frames = list()
 for cell in range(len(dff_ewma)):
     temp_gray = (dff_ewma[cell][0:delayframes])
     graydff_frames.append(temp_gray)
+    
+#==============================================================================
+# get xy centroid points or close
+from sys import platform
+
+def get_cellCentroids(directory, roizipfile, plotcheck):
+
+    a=roizip.read_roi_zip(directory + roizipfile)
+    
+    xlist = []
+    ylist = []
+    
+    xcent = []
+    ycent = []
+    
+    for j in range(len(a)):
+            
+        #print a[j]
+        #print type(a[j])
+        
+        if platform == "linux" or platform == "linux2":
+            # linux
+            xlist = [a[j][i][1] for i in range(len(a[j]))]
+            ylist = [a[j][i][0] for i in range(len(a[j]))]
+            
+        elif platform == "darwin":
+            # OS X
+            xlist = [a[j][1][i][1] for i in range(len(a[j][1]))]
+            ylist = [a[j][1][i][0] for i in range(len(a[j][1]))]
+            
+        elif platform == "win32":
+            # Windows...
+            xlist = [a[j][i][1] for i in range(len(a[j]))]
+            ylist = [a[j][i][0] for i in range(len(a[j]))]
+        
+        # get centroid x,y vals (means)    
+        bx = np.mean(xlist)
+        by = np.mean(ylist)
+        
+        xcent.append(bx)
+        ycent.append(by)    
+            
+        xlist.append(xlist[0])
+        ylist.append(ylist[0])
+        
+        if plotcheck == 1:
+            
+            # note that plt will be inverted relative to image, but correct CELL#s
+        
+            plt.plot(xlist, ylist, '-')
+    
+            plt.annotate(str(j), xy=(1, 1), xytext = (xlist[i], ylist[i]), color='limegreen', fontsize=8)
+                   
+            plt.plot(xcent, ycent, 'o')
+            
+            plt.xlim([0,512])            
+            plt.ylim([0,512])
+    
+    return xcent, ycent 
+    
+
+centroids_x, centroids_y = (get_cellCentroids(
+    fileDirectory,
+    roizipname,
+    1))
 
 #==============================================================================  
 # Run some functions
@@ -551,6 +616,8 @@ filenamemat = roizipname.replace('ROI','VARS').replace('.zip','.mat')
 with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
     pickle.dump({'grayraw_frames': grayraw_frames,
                  'graydff_frames': graydff_frames,
+                 'centroids_x': centroids_x,
+                 'centroids_y': centroids_y,
                  'response_avgs':response_avgs,
                  'pregray1s_response_avgs':pregray1s_response_avgs,
                  'pre_response_post_avgs':pre_response_post_avgs, 
@@ -563,6 +630,8 @@ with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
 # 3) Save initial "gray frames" to a MAT file
 savedVariables = {'grayraw_frames': grayraw_frames,
                  'graydff_frames': graydff_frames,
+                 'centroids_x': centroids_x,
+                 'centroids_y': centroids_y,
                  'README': 'm = cell, n = time (i.e. frame#)'
                  }              
 matlab.savemat(fileDirectory+filenamemat, savedVariables)
@@ -602,15 +671,15 @@ OSC.plotStack(
               all_response_indices
               )
 
-OSC.multiPlot(
-              pre_response_post_avgs,
-              rows,
-              cols,
-              range(0,rows),
-              [-0.5,1.0],
-              207-pre_timewindow,
-              all_response_indices
-              )
+#OSC.multiPlot(
+#              pre_response_post_avgs,
+#              rows,
+#              cols,
+#              range(0,rows),
+#              [-0.5,1.0],
+#              207-pre_timewindow,
+#              all_response_indices
+#              )
                   
 #==============================================================================
 

@@ -4,6 +4,9 @@ Created on Fri Oct  6 23:41:08 2017
 
 @author: jcoleman
 """
+import tkFileDialog
+import Tkinter as tk
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -18,87 +21,17 @@ from calcium import StepCodeFile as SCF
 
 #%% ONLY RUN CODE BELOW AFTER EACH CSV FILE HAS BEEN PICKLED
 # Getting back the objects:
-    
-filedir_D2 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis'+ \
-        '/thygcamp6s_LT4(9-10-17)/'
-filedir_D3 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-        'thygcamp6s_LT4(9-10-17)/'
-filedir_D4 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+\
-        'thygcamp6s_D4 5Hz (9-30-17)/'
-filedir_D5 = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-        'thygcamp6s_D5 (10-23-17)/'
-  
-      
-datafile = 'D2_001_Z1t0_hz05'
 
 
-if datafile == 'D2_001_Z1t0_hz05':
+    
+#%%
+D4_001Zhz1_means, D4_001Zhz1_indices, D4_001Zhz1_spontRaw, D4_001Zhz1_spontDFF = loadpickle()
+D4_001Zhz5_means, D4_001Zhz5_indices, D4_001Zhz5_spontRaw, D4_001Zhz5_spontDFF = loadpickle()    
 
-    filedir = filedir_D2
-    
-    picklefile = 'mThy6s2_alldrift_D2_001_VARS.pickle'
-    
-    responses_means_001D2Z1t0hz05, responses_indices_001D0Z1t0hz05 = (
-        OSC.load_responses(filedir, picklefile)
-    )
-    
-    spontaneousraw_001D2Z1t0hz05, spontaneousdff_001D2Z1t0hz05 = (
-        OSC.load_spontaneous(filedir, picklefile)
-    )
-    
 
-if datafile == 'D3_001_Z1t1_hz05':
-    
-    filedir = filedir_D3
-    
-    picklefile = 'mThy6s2_alldrift_D3_001Z1_VARS.pickle'
-    
-    responses_means_001D3Z1t1hz05, responses_indices_001D3Z1t1hz05 = \
-        OSC.load_responses(filedir, picklefile)
-        
-    spontaneousraw_001D3Z1t1hz05, spontaneousdff_001D3Z1t1hz05 = (
-        OSC.load_spontaneous(filedir, picklefile)
-    )
-    
+D5_001Zhz1_means, D5_001Zhz1_indices, D5_001Zhz1_spontRaw, D5_001Zhz1_spontDFF = loadpickle()
+D5_001Zhz5_means, D5_001Zhz5_indices, D5_001Zhz5_spontRaw, D5_001Zhz5_spontDFF = loadpickle()    
 
-if datafile == 'D3_001_Z1t2_hz05':
-    
-    filedir = filedir_D3
-    picklefile = 'mThy6s2_alldrift_D3_001Z1t2_VARS.pickle'
-    responses_means_001D3Z1t2hz05, responses_indices_001D3Z1t2hz05 = \
-        OSC.load_responses(filedir, picklefile)
-    
-
-if datafile == 'D4_001_Z1_hz1':
-
-    filedir = filedir_D4
-    picklefile = 'mThy6s2_alldrift_D4_001Z1_VARS.pickle'
-    responses_means_001D4hz1, responses_indices_001D4hz1 = \
-        OSC.load_responses(filedir, picklefile)
-    
-
-if datafile == 'D4_001_Z1_hz5':
-
-    filedir = filedir_D4
-    picklefile = 'mThy6s2_alldrift_D4_001Z1hz5_VARS.pickle'
-    responses_means_001D4hz5, responses_indices_001D4hz5 = \
-        OSC.load_responses(filedir, picklefile)
-    
-    
-if datafile == 'D4_002_Z1_hz1':
-
-    filedir = filedir_D4
-    picklefile = 'mThy6s2_alldrift_D4_002Z1hz1_VARS.pickle'
-    responses_means_002D4hz1, responses_indices_002D4hz1 = \
-        OSC.load_responses(filedir, picklefile)
-    
-    
-if datafile == 'D4_002_Z1_hz5':
-
-    filedir = filedir_D4
-    picklefile = 'mThy6s2_alldrift_D4_001Z1hz5_VARS.pickle'
-    responses_means_002D4hz5, responses_indices_002D4hz5 = \
-        OSC.load_responses(filedir, picklefile)
 
 
 #%%
@@ -118,12 +51,10 @@ if datafile == 'D4_002_Z1_hz5':
 
 t1=list()
 t2=list()
-
-#t1,t2 = (OSC.plot_time_responses(responses_means_001D4hz1, responses_indices_001D4hz1, 
-#                             responses_means_002D4hz5, responses_indices_002D4hz5, 0))
                              
-t1,t2 = (plot_time_responses(responses_means_001D4hz1, responses_indices_001D4hz1, 
-                             responses_means_001D4hz5, responses_indices_001D4hz5, 0))
+t1,t2 = (OSC.plot_time_responses(D4_001Zhz5_means, D4_001Zhz5_indices, 
+                                 D5_001Zhz5_means, D5_001Zhz5_indices,
+                                 0))
 
 #%% plot best fit
 import numpy as np
@@ -200,21 +131,16 @@ def plt_mean_oriR(data,colormark):
     #plt.xlabel([225,0,315,90,45,180,135,270])
     plt.xlabel([135,90,45,0,315,270,225,180]) # GCaMP6s Nature paper
 
-for cell in responses_means_002D4hz1: 
+for cell in D4_001Zhz1_means: 
     plt.subplots()
-    plt_mean_oriR(responses_means_002D4hz1[cell], 'bo-')
-    plt_mean_oriR(responses_means_002D4hz5[cell], 'ro-')       
+    plt_mean_oriR(D4_001Zhz5_means[cell], 'bo-')
+    plt_mean_oriR(D5_001Zhz5_means[cell], 'ro-')       
     
     plt.ylim([-0.5, 1.0])
     plt.xlim([-1.0, 8.0])
     
-    plt.legend(['1Hz', '5Hz'])
+    plt.legend(['D4 5Hz', 'D5 5Hz'])
     
-
-        
-
-        
-
 
 #Plot selected cells
 #OSC.plotROIavgs(response_avgs,filenamepkl.replace('_SESSION.pkl',''),[6,7,9,10,11,13,14,15,20,25,26],[-0.5,2.0])
