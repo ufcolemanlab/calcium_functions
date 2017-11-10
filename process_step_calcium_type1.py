@@ -7,6 +7,7 @@ Created on Mon Sep 11 19:44:20 2017
 import numpy as np
 from collections import OrderedDict
 from matplotlib import pyplot as plt
+import os
 from scipy.io import matlab
 
 import cPickle as pickle
@@ -19,100 +20,23 @@ from calcium import open_calcium_data_fast as ocdfast
 from calcium import StepCodeFile as SCF
 
 #==============================================================================
+#PART 1 - user input
 #Get step code file (*.bin), TIF image, ROI.zip files
-#==============================================================================
-#fileDirectoryTS = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
-#fileDirectory = 'F:/coleman lab/jasonc/thygcamp6s_test2/'
+#==============================================================================  
+datafile = 'DATA_mThy6f-2_alldrift_d1_002z1.csv' #unique key-string to ID data set
+datafile = 'DATA_mThy6f-2_slowpr_d1_002z1.csv' #unique key-string to ID data set
 
-fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-    'thygcamp6s_LT4(9-10-17)/'
+datatype = 2 # 1 (alldrift) or 2 (slowpr)
 
-#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-#    'thygcamp6s_D4 5Hz (9-30-17)/'
-    
-#fileDirectory = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/'+ \
-#    'thygcamp6s_D5 (10-23-17)/'
-
-datafile = 'D3_001_Z1t1_hz05'
-
-if datafile == 'D2_001_Z1t0_hz05':
-
-    fileBin = 'mThy6s2_alldrift_D2_001_12_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D2_001.tif'
-    roizipname = 'mThy6s2_alldrift_D2_001_ROI.zip'
-    
-
-if datafile == 'D3_001_Z1t1_hz05':
-    
-    fileBin = 'mThy6s_001_D3_6_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D3_001Z1.tif'
-    roizipname = 'mThy6s2_alldrift_D3_001Z1_ROI.zip'
-    
-
-if datafile == 'D3_001_Z1t2_hz05':
-    
-    fileBin = 'mThy6s_001_D3Z1t2_13_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D3_001Z1t2.tif'
-    roizipname = 'mThy6s2_alldrift_D3_001Z1t2_ROI.zip'
-    
-
-if datafile == 'D4_001_Z1_hz1':
-
-    fileBin = 'mThy6s_001_D4Z1_2_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D4_001Z1.tif'
-    roizipname = 'mThy6s2_alldrift_D4_001Z1_ROI.zip'
-    
-
-if datafile == 'D4_001_Z1_hz5':
-
-    fileBin = 'mThy6s_001_D4Z1hz5_5_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D4_001Z1hz5.tif'
-    roizipname = 'mThy6s2_alldrift_D4_001Z1hz5_ROI.zip'
-    
-    
-if datafile == 'D4_002_Z1_hz1':
-
-    fileBin = 'mThy6s_002_D4Z1_3_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D4_002Z1.tif'
-    roizipname = 'mThy6s2_alldrift_D4_002Z_ROI.zip'
-    
-    
-if datafile == 'D4_002_Z1_hz5':
-
-    fileBin = 'mThy6s_002_D4Z1hz5_4_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D4_002Z1hz5.tif'
-    roizipname = 'mThy6s2_alldrift_D4_002Zhz5_ROI.zip'
-    
-if datafile == 'D5_001_Z1_hz1':
-
-    fileBin = 'mThy6s_001_D5Z1hz1_12_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D5_001Z1hz1.tif'
-    roizipname = 'ROI_mThy6s2_alldrift_D5_001Z1hz1.zip'
-    
-
-if datafile == 'D5_001_Z1_hz5':
-
-    fileBin = 'mThy6s_001_D5Z1hz5_13_data.bin'
-    imgname = 'STD_mThy6s2_alldrift_D5_001Z1hz5.tif'
-    roizipname = 'ROI_mThy6s2_alldrift_D5_001Z1hz5.zip'
-    
-
-# parameters for mulitplot function
-a = roizip.read_roi_zip(fileDirectory + roizipname)
-
-rows = len(a) # number of ROIs
-cols = 8 # number of distinct stims
-
-#==============================================================================
-
-#==============================================================================
 #PARAMETERS
-#==============================================================================
-daqRecordingFreq = 1000.0 #sampling rate - Hz
+daqChannels = 8 # number of channels recorded on DAQ
+daqRecordingFreq = 1000 #sampling rate - Hz
 
-stimList = [0,45,90,135,180,225,270,315]
+if datatype == 1: # all drift
+    stimList = [0,45,90,135,180,225,270,315]
 
-#stimList = [0,45,90,135,180] #designate flip/flop?
+if datatype == 2: # (slow) phase-reversal
+    stimList = [0,45,90,135,180] #designate flip/flop?
 
 csvfiletype = 3 # 1= ; 2= ; 3=FIJI/ImageJ csv intensity file
 
@@ -131,21 +55,80 @@ mpmSamplingFreq = 30 # ~Hz/fps for 2p scan rate
 # gray time (in between stims)
 gray_offset= 7.0 #seconds
 
-# set the window for averaging pre-stim gray (207 frames = 7s)
+# Set the window for averaging pre-stim gray (207 frames = 7s)
+#   This is index from which to START to chunk out the LAST 1s of pre-stim gray
+#   (i.e. the 1s immediately preceeding the stim onset)
 pre_timewindow = 207-30 #207-75 # e.g., 207-30 = 1s from 30fps sample rate
 
 # delay time prior to first stim onset (in frames)
 # used for spontaneous activity analysis
-delayframes = 1700
+delayframes = 1700 #(60s~1700frames)
+
+# Parameters for classifying responsive cells
+# Used in OSC.get_responseClass function below
+"""   
+Detect responsive cells: Use Mann-Whitney U to compare each cell's orientation
+response (full mean trace) to corresponding pre-gray (full mean trace)
+
+    stimwindow -> duration of stimulus in frames (e.g., 145 frames ~ 5s stim)
+    
+    pthresh -> pval trheshold (ie p=0.05) for 'responsive' class
+    
+    dff_thresh -> minimum mean response to be considered for 'responsive' class
+        e.g., dff_thresh = 0.1 for Thy1-GCaMP6s mice
+    
+    togglePlot -> 0 = off or 1 = on; recommended ONLY for troubleshooting
+                                    (creates #cells x 8 figures)
+
+"""
+stimwindow = 145 # number of frames used to calculate response means
+pthresh = 0.05
+dff_thresh = 0.01 
+togglePlot = 0
 #==============================================================================
 
+#==============================================================================
+#PART 2 - user input (check files if needed?)
+#==============================================================================
+# Select folder containing BIN, CSV, TIF, and ZIP files for ONLY one T-series
+filenameInfo = OSC.load_datafiles()
 
+#data_index = 0
+#
+#column1 = [os.path.split(a[0][0])[1],
+#           os.path.split(a[2][0])[1],
+#           os.path.split(a[3][0])[1]]
+#column2 = [os.path.split(a[0][1])[1],
+#           os.path.split(a[2][1])[1],
+#           os.path.split(a[3][1])[1]]
+#padding = 9
+#for c1, c2 in zip(column1, column2):
+#    print "%s %s" % (c1.ljust(padding), c2)
+
+# is this OS-dependent?    
+fileBin = filenameInfo[0][0]
+csvname = filenameInfo[1][0]
+imgname = filenameInfo[2][0]
+roizipname = filenameInfo[3][0]
+
+#==============================================================================
+# PART 3 - do not change code up to PART 4 (this should move to a module (e.g., OSC))
+#==============================================================================
 # Begin decoding and data extraction
-code_file = SCF.StepCodeFile(fileDirectory+fileBin,8,8,1000)
+nTimeStampCodes = len(stimList)
+code_file = SCF.StepCodeFile(fileBin,
+                             nTimeStampCodes,
+                             daqChannels,
+                             daqRecordingFreq)
 
 stims = code_file.get_stim_angles(stimList)
 
 Bframes = [ts[0] for ts in code_file.timestamps[2]]
+
+# parameters for mulitplot function
+a = roizip.read_roi_zip(roizipname)
+rows = len(a) # number of ROIs
+cols = nTimeStampCodes # number of distinct stims
 
 
 # Get intensity file
@@ -489,7 +472,10 @@ response (full mean trace) to corresponding pre-gray (full mean trace)
 
     stimwindow -> duration of stimulus in frames (e.g., 145 frames ~ 5s stim)
     
-    pthresh -> minimum mean response to be considered for 'responsive' class
+    pthresh -> pval trheshold (ie p=0.05) for 'responsive' class
+    
+    dff_thresh -> minimum mean response to be considered for 'responsive' class
+        e.g., dff_thresh = 0.1 for Thy1-GCaMP6s mice
     
     togglePlot -> 0 = off or 1 = on; recommended ONLY for troubleshooting
                                     (creates #cells x 8 figures)
@@ -497,18 +483,18 @@ response (full mean trace) to corresponding pre-gray (full mean trace)
 """
 #get all orienation response means for a given cell
 #cell = 6
-stimwindow = 145 
-pthresh = 0.05
-togglePlot = 0
-all_response_indices = (
-                        OSC.get_responseClass(
+#stimwindow = 145 
+#pthresh = 0.05
+#dff_thresh = 0.01 
+#togglePlot = 0
+all_response_indices = (OSC.get_responseClass(
                         response_avgs,
                         pregray1s_response_avgs, 
                         pre_response_post_avgs, 
                         stimwindow, 
-                        pthresh, 
-                        togglePlot)
-                        )
+                        pthresh,
+                        dff_thresh,
+                        togglePlot))
 
 """
 Chunk out the first ~60sec (1700 frames) of signal during gray screen at the
@@ -532,75 +518,26 @@ for cell in range(len(dff_ewma)):
     graydff_frames.append(temp_gray)
     
 #==============================================================================
-# get xy centroid points or close
-from sys import platform
+## get xy centroid points or close
+#centroids_x, centroids_y = (OSC.get_cellCentroids(
+#    roizipname,
+#    0))
 
-def get_cellCentroids(directory, roizipfile, plotcheck):
-
-    a=roizip.read_roi_zip(directory + roizipfile)
-    
-    xlist = []
-    ylist = []
-    
-    xcent = []
-    ycent = []
-    
-    for j in range(len(a)):
-            
-        #print a[j]
-        #print type(a[j])
-        
-        if platform == "linux" or platform == "linux2":
-            # linux
-            xlist = [a[j][i][1] for i in range(len(a[j]))]
-            ylist = [a[j][i][0] for i in range(len(a[j]))]
-            
-        elif platform == "darwin":
-            # OS X
-            xlist = [a[j][1][i][1] for i in range(len(a[j][1]))]
-            ylist = [a[j][1][i][0] for i in range(len(a[j][1]))]
-            
-        elif platform == "win32":
-            # Windows...
-            xlist = [a[j][i][1] for i in range(len(a[j]))]
-            ylist = [a[j][i][0] for i in range(len(a[j]))]
-        
-        # get centroid x,y vals (means)    
-        bx = np.mean(xlist)
-        by = np.mean(ylist)
-        
-        xcent.append(bx)
-        ycent.append(by)    
-            
-        xlist.append(xlist[0])
-        ylist.append(ylist[0])
-        
-        if plotcheck == 1:
-            
-            # note that plt will be inverted relative to image, but correct CELL#s
-        
-            plt.plot(xlist, ylist, '-')
-    
-            plt.annotate(str(j), xy=(1, 1), xytext = (xlist[i], ylist[i]), color='limegreen', fontsize=8)
-                   
-            plt.plot(xcent, ycent, 'o')
-            
-            plt.xlim([0,512])            
-            plt.ylim([0,512])
-    
-    return xcent, ycent 
-    
-
-centroids_x, centroids_y = (get_cellCentroids(
-    fileDirectory,
-    roizipname,
-    1))
+# keeps geting error all of a suddnen - need to work for spatial info 
+#Traceback (most recent call last):
+#  File "<stdin>", line 3, in <module>
+#  File "/Users/jcoleman/anaconda/lib/python2.7/site-packages/calcium/OpenStepCalcium.py", line 524, in get_cellCentroids
+#    xlist = [a[j][1][i][1] for i in range(len(a[j][1]))]
+#IndexError: invalid index to scalar variable.
+   
+centroids_x =[]
+centroids_y =[]
 
 #==============================================================================  
-# Run some functions
+# Save processed data to files (PICKLE, MAT)
 """
 1) Save all variables from the session; to load -->
-    dill.load_session(fileDirectory+filenamepkl)
+    dill.load_session(filenamepkl)
 2) Save selected variables to a pickle file
 3) Save selected variables to a Matlab (mat) file
 """
@@ -610,10 +547,10 @@ filenamepkl = roizipname.replace('ROI','VARS').replace('.zip','.pickle')
 filenamemat = roizipname.replace('ROI','VARS').replace('.zip','.mat')
 
 # 1) Save 'workspace' to a PKL file (re-loading is an issue, not working on Mac)
-#dill.dump_session(fileDirectory+'RAW_'+filenamepkl)
+#dill.dump_session('RAW_'+filenamepkl)
 
 # 2) Pickle specific variables for response t1 vs. t2, etc plotting
-with open(fileDirectory+filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
+with open(filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
     pickle.dump({'grayraw_frames': grayraw_frames,
                  'graydff_frames': graydff_frames,
                  'centroids_x': centroids_x,
@@ -634,15 +571,16 @@ savedVariables = {'grayraw_frames': grayraw_frames,
                  'centroids_y': centroids_y,
                  'README': 'm = cell, n = time (i.e. frame#)'
                  }              
-matlab.savemat(fileDirectory+filenamemat, savedVariables)
+matlab.savemat(filenamemat, savedVariables)
 
 # Need to figure out saving nested dict into MAT file - below works for cell#0
-#matlab.savemat(fileDirectory+'keys.mat', {'response_avgs_keys':response_avgs.keys(),
+#matlab.savemat('keys.mat', {'response_avgs_keys':response_avgs.keys(),
 #                                          'response_avgs_vals':response_avgs[0].values()
 #                                          })
 
 #==============================================================================
-
+# PART 4 - Run some functions using the procesed data from PART 3
+#==============================================================================
 # need tracePlot_raw function to increase space between traces
 OSC.tracePlot(grayraw_frames,
               response_indices,
@@ -664,22 +602,22 @@ plt.ylabel('deltaF/F')
 plt.title('Filtered/normalized signal during gray screen delay prior to stim')
 
 
-OSC.plotStack(
-              fileDirectory,
-              imgname,
+OSC.plotStack(imgname,
               roizipname,
-              all_response_indices
-              )
+              all_response_indices)
 
-#OSC.multiPlot(
-#              pre_response_post_avgs,
-#              rows,
-#              cols,
-#              range(0,rows),
-#              [-0.5,1.0],
-#              207-pre_timewindow,
-#              all_response_indices
-#              )
+
+plotcells = 10 # = len(pre_response_post_avgs) to plot all cells 
+startcell = 0 # = 0 to plot all cells
+rows = plotcells
+OSC.multiPlot(pre_response_post_avgs,
+              rows,
+              cols,
+              range(startcell,rows+startcell),
+              [-0.5,1.0],
+              207-pre_timewindow,
+              all_response_indices)
+              
                   
 #==============================================================================
 

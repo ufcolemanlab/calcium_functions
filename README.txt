@@ -1,3 +1,7 @@
+WORKFLOW:
+
+1) run process_step_calcium_type1.py for "alldrift" (select CSV)
+
 Use *_step_calcium_type*.py files as follows:
 
 type1
