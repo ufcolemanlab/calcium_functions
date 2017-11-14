@@ -4,73 +4,147 @@ Created on Fri Oct  6 23:41:08 2017
 
 @author: jcoleman
 """
-# Coleman lab modules - combine into a single class?
-from calcium import OpenStepCalcium as OSC
-from calcium import calcium_imaging_data_fast as cidfast
-from calcium import open_calcium_data_fast as ocdfast
-from calcium import StepCodeFile as SCF
-
-# Python modules
+import Tkinter as tk
+import tkFileDialog
+from glob import glob
 import numpy as np
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import dill # need to download
 import cPickle as pickle
 
+# Coleman lab modules - combine into a single class?
+from calcium import OpenStepCalcium as OSC
+from calcium import calcium_imaging_data_fast as cidfast
+from calcium import open_calcium_data_fast as ocdfast
+from calcium import StepCodeFile as SCF
+
 #%% ONLY RUN CODE BELOW AFTER EACH CSV FILE HAS BEEN PICKLED
 # Getting back the objects:
     
 #
-datafile = 'D4_001_Z1_hz5'
+responses_001D2Z1t0hz05 = OSC.load_responses()
+responses_001D3Z1t1hz05 = OSC.load_responses()
+#responses_001D3Z1t2hz05 = OSC.load_responses()
+#responses_001D4hz1 = OSC.load_responses()
+#responses_001D4hz5 = OSC.load_responses()
+#responses_002D4hz1 = OSC.load_responses()
+#responses_002D4hz5 = OSC.load_responses()
+#    
+#responses_6f2_002z1_d1 = OSC.load_responses() #means[0], indices[1]
 
-if datafile == 'D2_001_Z1t0_hz05':
+#%% NORMALIZE RESPONSE DATA
+from copy import deepcopy
 
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_LT4(9-10-17)/'
-    picklefile = 'mThy6s2_alldrift_D2_001_VARS.pickle'
-    responses_means_001D2Z1t0hz05, responses_indices_001D0Z1t0hz05 = OSC.load_responses(filedir, picklefile)
+def load_wholepickle():
     
-
-if datafile == 'D3_001_Z1t1_hz05':
+    """
+    ['user_parameters',
+    'stimwindow',
+    'pre_response_post_avgs',
+    'centroids_y',
+    'centroids_x',
+    'all_response_indices',
+    'grayraw_frames',
+    'responses_means',
+    'response_avgs',
+    'pregray1s_response_avgs',
+    'graydff_frames',
+    'pthresh']
     
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_LT4(9-10-17)/'
-    picklefile = 'mThy6s2_alldrift_D3_001Z1_VARS.pickle'
-    responses_means_001D3Z1t1hz05, responses_indices_001D3Z1t1hz05 = OSC.load_responses(filedir, picklefile)
+    """
     
-
-if datafile == 'D3_001_Z1t2_hz05':
+    root = tk.Tk()
+    root.withdraw()
+    root.update()
     
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_LT4(9-10-17)/'
-    picklefile = 'mThy6s2_alldrift_D3_001Z1t2_VARS.pickle'
-    responses_means_001D3Z1t2hz05, responses_indices_001D3Z1t2hz05 = OSC.load_responses(filedir, picklefile)
+    filepath = tkFileDialog.askopenfilename(parent=root,title='Choose a pickle file ...')
+
+    with open(filepath) as f:  # Python 3: open(..., 'rb')
+        alldata = pickle.load(f)
     
+    return alldata
 
-if datafile == 'D4_001_Z1_hz1':
-
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
-    picklefile = 'mThy6s2_alldrift_D4_001Z1_VARS.pickle'
-    responses_means_001D4hz1, responses_indices_001D4hz1 = OSC.load_responses(filedir, picklefile)
     
-
-if datafile == 'D4_001_Z1_hz5':
-
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
-    picklefile = 'mThy6s2_alldrift_D4_001Z1hz5_VARS.pickle'
-    responses_means_001D4hz5, responses_indices_001D4hz5 = OSC.load_responses(filedir, picklefile)
+def normalize_data(data):
     
+    data_norm = deepcopy(data)
     
-if datafile == 'D4_002_Z1_hz1':
+    for cell in data_norm:
+        
+        for ori in data_norm[cell]:
+            
+            temp = data_norm[cell][ori]
+            
+            temp -= min(temp)
+            temp /= max(temp)
+            
+            data_norm[cell][ori] = temp
+        
+    #    session_gray_avgs = np.array(session_gray_avgs).astype(np.float)
+    return data_norm
 
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
-    picklefile = 'mThy6s2_alldrift_D4_002Z1hz1_VARS.pickle'
-    responses_means_002D4hz1, responses_indices_002D4hz1 = OSC.load_responses(filedir, picklefile)
+# load data of interest from the pickle file        
+all = load_wholepickle()
+
+# normalize the data
+normalized_data = normalize_data(all['response_avgs'])
+
+# check some data
+plt.plot(all['response_avgs'][6][45])
+plt.plot(normalized_data[6][45])
+
+#%% 
+
+def plot_heatmap(data, stimList, cellsort):
+    #Heat plots
+    """
+    data -> dictionary of data[cell][orientation]
+    stimList -> list of integers (orientations)
+    cellsort -> 'sort max' to rank by timing of max response
+                'sort no' to leave unsorted (list by cell ID rank)
+                ? 'sort 0' to sort based on sort-max of 0deg
     
+    """
     
-if datafile == 'D4_002_Z1_hz5':
+    # Sort cells by latency to max intensity value       
+    # group all cells into one variable for one orientation
+    for stim in range(len(stimList)):
+        
+        datatemp = []
+    
+        for cell in data:
+            datatemp.append(data[cell][stimList[stim]])
+        
+        
+        if cellsort == 'sort max':
+            sorted_response_avgs = sorted(datatemp, key=lambda x: x.argmax())
+            ## check sorted data:
+            #plt.subplots()
+            #for cell in range(len(sorted_response_avgs)):
+            #    plt.plot(sorted_response_avgs[cell]+0.2*cell)
+        
+            sorted_response_avgs_keys = np.argsort(np.argmax(datatemp, axis=1))
+            
+        elif cellsort == 'sort no':
+            sorted_response_avgs = datatemp
+            sorted_response_avgs_keys = data.keys()                
+        
+        
+#        if all_orientations==1:
+#            np.concat()
+#            
+#        #apply hanning window smoothing?
+#        
+#        else:
+        cidfast.plotHeatAvgs(sorted_response_avgs, sorted_response_avgs_keys, 30, 0, 1.0, 'deltaF/F (%)')
+        plt.title('Sorted: '+str(stimList[stim]))
 
-    filedir = '/Users/jcoleman/Documents/--DATA--/in vivo gcamp analysis/thygcamp6s_D4 5Hz (9-30-17)/'
-    picklefile = 'mThy6s2_alldrift_D4_001Z1hz5_VARS.pickle'
-    responses_means_002D4hz5, responses_indices_002D4hz5 = OSC.load_responses(filedir, picklefile)
 
+#user_parameters['stimList']
+stimList = [0,45,90,135,180,225,270,315]
+
+plot_heatmap(normalized_data, stimList, 'sort max')
 
 #%%
 ## all cells
@@ -93,8 +167,8 @@ t2=list()
 #t1,t2 = (OSC.plot_time_responses(responses_means_001D4hz1, responses_indices_001D4hz1, 
 #                             responses_means_002D4hz5, responses_indices_002D4hz5, 0))
                              
-t1,t2 = (plot_time_responses(responses_means_001D4hz1, responses_indices_001D4hz1, 
-                             responses_means_001D4hz5, responses_indices_001D4hz5, 0))
+t1,t2 = (OSC.plot_time_responses(responses_001D2Z1t0hz05[0], responses_001D2Z1t0hz05[1], 
+                             responses_001D3Z1t1hz05[0], responses_001D3Z1t1hz05[1], 0))
 
 #%% plot best fit
 import numpy as np
@@ -171,18 +245,39 @@ def plt_mean_oriR(data,colormark):
     #plt.xlabel([225,0,315,90,45,180,135,270])
     plt.xlabel([135,90,45,0,315,270,225,180]) # GCaMP6s Nature paper
 
-for cell in responses_means_002D4hz1: 
+for cell in responses_001D2Z1t0hz05[0]: 
     plt.subplots()
-    plt_mean_oriR(responses_means_002D4hz1[cell], 'bo-')
-    plt_mean_oriR(responses_means_002D4hz5[cell], 'ro-')       
+    plt_mean_oriR(responses_001D2Z1t0hz05[0][cell], 'bo-')
+    plt_mean_oriR(responses_001D3Z1t1hz05[0][cell], 'ro-')       
     
     plt.ylim([-0.5, 1.0])
     plt.xlim([-1.0, 8.0])
     
-    plt.legend(['1Hz', '5Hz'])
+    plt.legend(['D1 1Hz', 'D3 1Hz'])
     
 
-        
+ #%%
+#polar plots for normalized data - one celabs
+
+for i in range(len(normalized_data)):
+    r_avgs_cell = normalized_data[i]
+    polar_data = []
+    for ori in r_avgs_cell:
+        polar_data.append(np.mean(r_avgs_cell[ori]))
+    
+    #ra = all['responses_means'] # not sure if should start with normalized vector data
+    #ra_cell6 = ra[6]
+    #aa=(ra_cell6.values())
+    #aa-=min(aa)
+    #aa/=max(aa)
+    
+    stimListRads = np.array(r_avgs_cell.keys())*(np.pi/180)
+    
+    #plt.figure()
+    plt.title('cell '+ str(i))
+    plt.polar(stimListRads,polar_data, 'o')
+
+
 
         
 

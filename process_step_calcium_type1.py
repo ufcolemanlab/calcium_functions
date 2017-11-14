@@ -26,7 +26,7 @@ from calcium import StepCodeFile as SCF
 datafile = 'DATA_mThy6f-2_alldrift_d1_002z1.csv' #unique key-string to ID data set
 datafile = 'DATA_mThy6f-2_slowpr_d1_002z1.csv' #unique key-string to ID data set
 
-datatype = 2 # 1 (alldrift) or 2 (slowpr)
+datatype = 1 # 1 (alldrift) or 2 (slowpr)
 
 #PARAMETERS
 daqChannels = 8 # number of channels recorded on DAQ
@@ -83,15 +83,31 @@ response (full mean trace) to corresponding pre-gray (full mean trace)
 """
 stimwindow = 145 # number of frames used to calculate response means
 pthresh = 0.05
-dff_thresh = 0.01 
+dff_thresh = 0.1 # 0.1 thygcamp6s
 togglePlot = 0
+
+user_parameters = {'datafile':datafile,
+                   'datatype':datatype,
+                   'stimList':stimList,
+                   'csvfiletype':csvfiletype,
+                   't_0':t_0,
+                   't_1':t_1,
+                   't_2':t_2,
+                   'mpmSamplingFreq':mpmSamplingFreq,
+                   'gray_offset':gray_offset,
+                   'pre_timewindow':pre_timewindow,
+                   'delayframes':delayframes,
+                   'stimwindow':stimwindow,
+                   'pthresh':pthresh,
+                   'dff_thresh':dff_thresh,
+                   'togglePlot':togglePlot}
 #==============================================================================
 
 #==============================================================================
 #PART 2 - user input (check files if needed?)
 #==============================================================================
 # Select folder containing BIN, CSV, TIF, and ZIP files for ONLY one T-series
-filenameInfo = OSC.load_datafiles()
+filenameInfo = OSC.load_datafiles('raw')
 
 #data_index = 0
 #
@@ -551,7 +567,8 @@ filenamemat = roizipname.replace('ROI','VARS').replace('.zip','.mat')
 
 # 2) Pickle specific variables for response t1 vs. t2, etc plotting
 with open(filenamepkl, 'w') as f:  # Python 3: open(..., 'wb')
-    pickle.dump({'grayraw_frames': grayraw_frames,
+    pickle.dump({'user_parameters': user_parameters,
+                 'grayraw_frames': grayraw_frames,
                  'graydff_frames': graydff_frames,
                  'centroids_x': centroids_x,
                  'centroids_y': centroids_y,
